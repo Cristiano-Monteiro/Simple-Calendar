@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendário Simples</title>
+  <style>
+    *{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: sans-serif;
+    }
+
+    :root{
+      font-size: 62.5%;
+
+      color-scheme: dark;
+    }
+
+    body{
+      width: 100%;
+      height: 100vh;
+      font-size: 1.6rem;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wrapper{
+      width: 90%;
+      max-width: 80rem;
+    }
+
+
+
+
+
+    .calendarContainer{
+      width: 100%;
+      background-color: #FFF;
+      color: #000;
+    }
+
+    .header{
+      padding: 1rem 2rem;
+      font-size: 2rem;
+      font-weight: bold;
+
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .header button[type='button']{
+      padding: 0 1rem;
+      cursor: pointer;
+    }
+
+    .monthAndYear{
+      font-size: 2.5rem;
+    }
+
+    .week,
+    .days{
+      display: flex;
+      list-style: none;
+    }
+
+    .days{
+      flex-wrap: wrap;
+    }
+
+    .week li,
+    .days li{
+      width: calc(100% / 7);
+      text-align: center;
+    }
+
+    .week li{
+      border-bottom: 1px solid #c7c7c7;
+      font-weight: bold;
+      padding: 1rem;
+    }
+
+    .days li{
+      min-height: 5rem;
+      padding-top: 1rem;
+      user-select: none;
+
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .days span.event{
+      width: 100%;
+      background-color: red;
+      padding: .5rem;
+      border-radius: 1rem;
+
+      color: #FFF;
+      font-size: 1.15rem;
+      font-weight: bold;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+
+      display: flex;
+
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .days span.event::after{
+      content: var(--details);
+      position: absolute;
+      top: calc(100% + .5rem);
+      z-index: 1;
+
+      width: 200%;
+      background-color: #939393;
+      border-radius: .5rem;
+      padding: .5rem;
+
+      white-space: wrap;
+
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-.5rem);
+      transition: all .3s ease-in-out;
+    }
+
+    .days span.event:hover::after{
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0rem);
+    }
+
+    .days span.currentDate{
+      background-color: #383838;
+      padding: .5rem;
+      border-radius: 50%;
+      color: #FFF;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .days li.dayDisabled{
+      color: #ccc;
+      cursor: not-allowed;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class='calendarContainer'>
+      <div class="header">
+        <div>
+          <span class="monthAndYear"></span>
+        </div>
+        <div class="bttns">
+          <button type="button" class="backBttn">
+            <
+          </button>
+          <button type="button" class="nextBttn">
+            >
+          </button>
+        </div>
+      </div>
+      <ul class="week">
+        <li>Dom</li>
+        <li>Seg</li>
+        <li>Ter</li>
+        <li>Qua</li>
+        <li>Qui</li>
+        <li>Sex</li>
+        <li>Sab</li>
+      </ul>
+      <ul class="days"></ul>
+    </div>
+  </div>
+
+
+  <script>
+    const days = document.querySelector('.days');
+
+    const monthAndYear = document.querySelector('.monthAndYear');
+    const backBttn = document.querySelector('.backBttn');
+    const nextBttn = document.querySelector('.nextBttn');
+
+    const months = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+
+    const weekDays = [
+      'Dom',
+      'Seg',
+      'Ter',
+      'Qua',
+      'Qui',
+      'Sex',
+      'Sab',
+    ];
+
+
+
+    /* onst exampleData = [
+      {
+        id: 1,
+        title: '1st of the Month',
+        details: 'Everything is funny as long as it is happening to someone else',
+        start: getCurrentDay(1),
+        end: getCurrentDay(1),
+        bgcolor: 'orange'
+      },
+      {
+        id: 2,
+        title: 'Sisters Birthday',
+        details: 'Buy a nice present',
+        start: getCurrentDay(4),
+        end: getCurrentDay(4),
+        bgcolor: 'green',
+        icon: 'fas fa-birthday-cake'
+      },
+      {
+        id: 3,
+        title: 'Meeting',
+        details: 'Time to pitch my idea to the company',
+        start: getCurrentDay(10),
+        end: getCurrentDay(10),
+        time: '10:00',
+        duration: 120,
+        bgcolor: 'red',
+        icon: 'fas fa-handshake'
+      },
+      {
+        id: 4,
+        title: 'Lunch',
+        details: 'Company is paying!',
+        start: getCurrentDay(10),
+        end: getCurrentDay(10),
+        time: '11:30',
+        duration: 90,
+        bgcolor: 'teal',
+        icon: 'fas fa-hamburger'
+      },
+      {
+        id: 5,
+        title: 'Visit mom',
+        details: 'Always a nice chat with mom',
+        start: getCurrentDay(20),
+        end: getCurrentDay(20),
+        time: '17:00',
+        duration: 90,
+        bgcolor: 'grey',
+        icon: 'fas fa-car'
+      },
+      {
+        id: 6,
+        title: 'Conference',
+        details: 'Teaching Javascript 101',
+        start: getCurrentDay(22),
+        end: getCurrentDay(22),
+        time: '08:00',
+        duration: 540,
+        bgcolor: 'blue',
+        icon: 'fas fa-chalkboard-teacher'
+      },
+      {
+        id: 7,
+        title: 'Girlfriend',
+        details: 'Meet GF for dinner at Swanky Restaurant',
+        start: getCurrentDay(22),
+        end: getCurrentDay(22),
+        time: '19:00',
+        duration: 180,
+        bgcolor: 'teal',
+        icon: 'fas fa-utensils'
+      },
+      {
+        id: 8,
+        title: 'Rowing',
+        details: 'Stay in shape!',
+        start: getCurrentDay(27),
+        end: getCurrentDay(28),
+        bgcolor: 'purple',
+        icon: 'rowing'
+      },
+      {
+        id: 9,
+        title: 'Fishing',
+        details: 'Time for some weekend R&R',
+        start: getCurrentDay(22),
+        end: getCurrentDay(29),
+        bgcolor: 'purple',
+        icon: 'fas fa-fish'
+      },
+      {
+        id: 10,
+        title: 'Vacation',
+        details: 'Trails and hikes, going camping! Don\'t forget to bring bear spray!',
+        start: getCurrentDay(22),
+        end: getCurrentDay(29),
+        bgcolor: 'purple',
+        icon: 'fas fa-plane'
+      }
+    ]; */
+
+
+
+    const eventsData = {
+      'Abr': {
+        5: [
+          {
+            title: 'Teste de evento1',
+            details: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit.',
+            color: 'red',
+          },
+          {
+            title: 'Lorem ipsum dolor sit Teste de evento1.1',
+            details: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit.',
+            color: 'blue',
+          },
+        ],
+        8: [
+          {
+            title: 'Teste de evento2',
+            details: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit.',
+            color: 'blue',
+          },
+        ],
+        16: [
+          {
+            title: 'Lorem ipsum dolor sit Teste de event3',
+            details: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit.',
+            color: 'green',
+          },
+          {
+            title: 'Teste de event3.1',
+            details: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit.',
+            color: 'green',
+          },
+        ],
+      },
+    };
+
+    // Define o mês e o ano atual no calendário
+    const currentDate = new Date();
+    let currentMonth = currentDate.getMonth();
+    let currentYear = currentDate.getFullYear();
+
+
+    backBttn.addEventListener('click', () => {
+      if(currentMonth > 0){
+        let monthAux = currentMonth-1;
+        currentMonth = monthAux;
+        handleCalendar(monthAux, currentYear);
+      };
+    });
+
+    nextBttn.addEventListener('click', () => {
+      if(currentMonth < 11){
+        let monthAux = currentMonth+1;
+        currentMonth = monthAux;
+        handleCalendar(monthAux, currentYear);
+      };
+    });
+
+    function handleCalendar(month, year){
+      const currentDateAux = new Date();
+
+      monthAndYear.innerText = `${months[month]} ${year}`;
+
+      const firstDayOfMonth = new Date(year, month, 1).getDay();
+      const lastDayOfMonth = new Date(year, month+1, 0).getDate();
+
+
+      const lastMonth = new Date(year, month, 0);
+
+      const daysRemainingLastMonth = lastMonth.getDate() - lastMonth.getDay();
+
+      days.innerHTML = '';
+
+
+
+      const monthsIndex = {
+        'Jan': 0,
+        'Fev': 1,
+        'Mar': 2,
+        'Abr': 3,
+        'Mai': 4,
+        'Jun': 5,
+        'Jul': 6,
+        'Ago': 7,
+        'Set': 8,
+        'Out': 9,
+        'Nov': 10,
+        'Dez': 11,
+      };
+
+      const setColors = {
+        'red': '#ed4d47',
+        'blue': '#4a47ed',
+        'green': '#47ed4f',
+      };
+
+
+
+      let totalDays = 0;
+
+      if(lastMonth.getDay() !== 6){
+        for(let i = daysRemainingLastMonth; i <= lastMonth.getDate(); i++){
+          let li = document.createElement('li');
+          li.classList.add('dayDisabled');
+          li.innerText = i;
+          days.appendChild(li);
+  
+          totalDays++;
+        };
+      };
+  
+
+
+      for(let i = 1; i <= lastDayOfMonth; i++){
+        let li = document.createElement('li');
+         
+        let span = document.createElement('span');
+        span.innerText = i;
+
+        if((month === currentDateAux.getMonth()) && (i === currentDateAux.getDate())){
+          span.classList.add('currentDate');
+        };
+        
+        li.appendChild(span);
+        
+        if(eventsData[months[month]] && eventsData[months[month]][i]){
+          let dataAux = eventsData[months[month]][i];
+
+          dataAux.forEach((data) => {
+            let span = document.createElement('span');
+            span.classList.add('event');
+            span.style.setProperty('--details', `'${data.details}'`);
+            span.style.backgroundColor = `${setColors[data.color]}`;
+            span.innerHTML = data.title;
+  
+            li.appendChild(span);
+          });
+        };
+
+        days.appendChild(li);
+
+        totalDays++;
+      };
+
+
+
+      let dayAux = 1;
+      for(let i = totalDays; i <= 41; i++){
+        let li = document.createElement('li');
+        li.classList.add('dayDisabled');
+        li.innerText = dayAux;
+        days.appendChild(li);
+        dayAux++;
+      };
+    };
+
+
+
+    handleCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
